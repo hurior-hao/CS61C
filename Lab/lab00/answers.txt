@@ -1,4 +1,4 @@
-1.
-2.
-3.
-4.
+1.grep
+2.ps
+3.kill PID
+4.diff f1 f2
