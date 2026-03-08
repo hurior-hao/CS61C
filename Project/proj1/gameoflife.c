@@ -22,14 +22,73 @@
 //and the left column as adjacent to the right column.
 Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule)
 {
-	//YOUR CODE HERE
+	int rows = (int)image->rows;
+	int cols = (int)image->cols;
+	Color *pixel = malloc(sizeof(Color));
+	pixel->R = 0;
+	pixel->G = 0;
+	pixel->B = 0;
+	for(int bit = 0; bit < 8; bit++){
+		int cntR = 0;
+		int cntG = 0;
+		int cntB = 0;
+		for(int i = -1; i <= 1; i++){
+			for(int j = -1; j <= 1; j++){
+				if(i==0 && j==0){continue;}
+				int new_row = (row + i + rows) % rows;
+				int new_col = (col + j + cols) % cols;
+				cntR += ((image->image[new_row][new_col].R)>>bit) & 1;
+				cntG += ((image->image[new_row][new_col].G)>>bit) & 1;
+				cntB += ((image->image[new_row][new_col].B)>>bit) & 1;
+			}
+		}
+		if(((image->image[row][col].R)>>bit) & 1){
+			int newstate = (rule >> (cntR+9)) & 1;
+			pixel->R = (pixel->R & ~(1 << bit)) | (newstate << bit);
+		}
+		else {
+			int newstate = (rule >> cntR) & 1;
+			pixel->R = (pixel->R & ~(1 << bit)) | (newstate << bit);
+		}
+		if(((image->image[row][col].G)>>bit) & 1){
+			int newstate = (rule >> (cntG+9)) & 1;
+			pixel->G = (pixel->G & ~(1 << bit)) | (newstate << bit);
+		}
+		else {
+			int newstate = (rule >> cntG) & 1;
+			pixel->G = (pixel->G & ~(1 << bit)) | (newstate << bit);
+		}
+		if(((image->image[row][col].B)>>bit) & 1){
+			int newstate = (rule >> (cntB+9)) & 1;
+			pixel->B = (pixel->B & ~(1 << bit)) | (newstate << bit);
+		}
+		else {
+			int newstate = (rule >> cntB) & 1;
+			pixel->B = (pixel->B & ~(1 << bit)) | (newstate << bit);
+		}
+	}
+	return pixel;
 }
 
 //The main body of Life; given an image and a rule, computes one iteration of the Game of Life.
 //You should be able to copy most of this from steganography.c
 Image *life(Image *image, uint32_t rule)
 {
-	//YOUR CODE HERE
+	Image* new_image = malloc(sizeof(Image));
+	new_image->rows = image->rows;
+	new_image->cols = image->cols;
+	new_image->image = (Color**) malloc(new_image->rows*sizeof(Color*));
+	for(int i=0;i<new_image->rows;i++){new_image->image[i] = (Color*)malloc(new_image->cols*sizeof(Color));}
+	for(int i=0;i<new_image->rows;i++){
+		for(int j=0;j<new_image->cols;j++){
+			Color *pixel = evaluateOneCell(image,i,j,rule);
+			new_image->image[i][j].R = pixel->R;
+			new_image->image[i][j].G = pixel->G;
+			new_image->image[i][j].B = pixel->B;
+			free(pixel);
+		}
+	}
+	return new_image;
 }
 
 /*
@@ -49,5 +108,23 @@ You may find it useful to copy the code from steganography.c, to start.
 */
 int main(int argc, char **argv)
 {
-	//YOUR CODE HERE
+	if(argc!=3){
+		exit(-1);
+	}
+	char *filename = argv[1];
+	uint32_t rule = strtol(argv[2],NULL,16);
+	Image* image = readData(filename);
+	if(image==NULL){
+		printf("Failed to read image\n");
+		exit(-1);
+	}
+	Image* new_image = life(image,rule);
+	if(new_image==NULL){
+		printf("Failed to create new image\n");
+		exit(-1);
+	}
+	writeData(new_image);
+	freeImage(image);
+	freeImage(new_image);
+	return 0;
 }
